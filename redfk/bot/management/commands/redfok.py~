@@ -1,7 +1,7 @@
 import datetime
 import requests
 from django.core.management.base import BaseCommand
-from django.core.management import call_command
+from django.core.mail import send_mail
 from redfk.settings import (access_token)
 from bot.views import (ImportRedditPost,)
 from bot.models import (PostLinks, FacebookPage)
@@ -23,12 +23,20 @@ class Command(BaseCommand):
         instance_reddit = ImportRedditPost()
         month = Durations.get_current_month()
         rand_post = PostLinks.randoms.filter(active=2, createdOn__month=month)
+        import ipdb;ipdb.set_trace()
         if rand_post:
             post = rand_post[0]
-            data = requests.post("https://graph.facebook.com/v3.0/feed?link=%s&access_token=%s" % (post.original_link,access_token))
-            FacebookPage.objects.create(post=post, fb_id=data.text)
-            post.switch()
-            print(data.text)
+            if post.createdOn.month == month:
+                data = requests.post("https://graph.facebook.com/v3.0/feed?link=%s&access_token=%s" % (post.original_link,access_token))
+                FacebookPage.objects.create(post=post, fb_id=data.text)
+                post.switch()
+                send_mail('Facebook Post Status',
+                          data.text,
+                          'doddapypers@python.org',
+                          ['pradamabhilash@gmail.com'],
+                          fail_silently=False)
+            else:
+                PostLinks.objects.filter(active=2).delete()
+                instance_reddit.save_link()
         else:
             instance_reddit.save_link()
-            call_command('redfok')

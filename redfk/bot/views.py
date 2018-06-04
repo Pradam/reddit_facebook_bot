@@ -1,11 +1,9 @@
-import requests
 import praw
 from redfk.settings import (cliend_id,
                             client_secret,
                             username,
                             password,
-                            user_agent,
-                            access_token)
+                            user_agent)
 from .models import (RedditSubscription,
                      Category,
                      PostLinks)
