@@ -20,22 +20,23 @@ class Durations(object):
 class Command(BaseCommand):
     help = 'Posting Reddit Link to Facebook Page.'
 
-    def handle(self, *args, **options):
+    def call_reddit_links(self):
         instance_reddit = ImportRedditPost()
         month = Durations.get_current_month()
-        get_last_site = FacebookPage.objects.latest().get_switch()
-        if get_last_site == 0:
-            rand_post = PostLinks.randoms.filter(active=2, createdOn__month=month)
-            if rand_post:
-                post = rand_post[0]
-                data = requests.post("https://graph.facebook.com/v3.0/feed?link=%s&access_token=%s" % (post.original_link,access_token))
-                FacebookPage.objects.create(site=0, post=post, fb_id=data.text)
-                post.switch()
-                print(data.text)
-            else:
-                instance_reddit.save_link()
-                call_command('redfok')
+        rand_post = PostLinks.randoms.filter(active=2, createdOn__month=month)
+        if rand_post:
+            post = rand_post[0]
+            data = requests.post("https://graph.facebook.com/v3.0/feed?link=%s&access_token=%s" % (post.original_link,access_token))
+            FacebookPage.objects.create(site=0, post=post, fb_id=data.text)
+            post.switch()
+            print(data.text)
         else:
+            instance_reddit.save_link()
+            call_command('redfok')
+
+    def handle(self, *args, **options):
+        get_last_site = FacebookPage.objects.latest().get_switch()
+        if get_last_site == 1:
             st_ids = list(StackOverflow.objects.filter(active=2).values_list('id', flat=True))
             if st_ids:
                 get_stack_obj = StackOverflow.objects.get(id=choice(st_ids))
@@ -45,13 +46,6 @@ class Command(BaseCommand):
                 get_stack_obj.save()
                 print(data.text)
             else:
-                rand_post = PostLinks.randoms.filter(active=2, createdOn__month=month)
-                if rand_post:
-                    post = rand_post[0]
-                    data = requests.post("https://graph.facebook.com/v3.0/feed?link=%s&access_token=%s" % (post.original_link,access_token))
-                    FacebookPage.objects.create(site=0, post=post, fb_id=data.text)
-                    post.switch()
-                    print(data.text)
-                else:
-                    instance_reddit.save_link()
-                    call_command('redfok')
+                self.call_reddit_links()
+        else:
+            self.call_reddit_links()
