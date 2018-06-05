@@ -1,3 +1,4 @@
+import requests
 import praw
 from redfk.settings import (cliend_id,
                             client_secret,
@@ -6,14 +7,14 @@ from redfk.settings import (cliend_id,
                             user_agent)
 from .models import (RedditSubscription,
                      Category,
-                     PostLinks)
+                     PostLinks, StackOverflow)
 # Create your views here.
 
 
 class ImportRedditPost:
 
     def __init__(self):
-        self.kwargs = {'limit': 10}
+        self.kwargs = {'limit': 15}
         self.reddit = praw.Reddit(client_id=cliend_id,
                                   client_secret=client_secret,
                                   password=password,
@@ -44,3 +45,13 @@ class ImportRedditPost:
                                              subscribe_id=instance_id,
                                              original_link=link,
                                              ups=submission.ups)
+
+    def save_stack(self):
+        url = "https://api.stackexchange.com/2.2/questions?order=desc&sort=votes&tagged=python&site=stackoverflow&pagesize=100"
+        stack_overflow = requests.get(url)
+        stack_response = stack_overflow.json()
+        json_value = stack_response.get('items', [])
+        if json_value:
+            for val in json_value:
+                link, score = val.get('link'), val.get('score')
+                StackOverflow.objects.create(link=link, score=score)

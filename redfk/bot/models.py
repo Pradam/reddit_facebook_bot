@@ -1,8 +1,8 @@
 from random import choice
 from django.db import models
-from django.db.models.aggregates import Count
 
 # Create your models here.
+SITES = ((0, 'Reddit'), (1, 'StackOverflow'))
 
 ACTIVE = ((0, 0), (2, 2))
 
@@ -61,9 +61,26 @@ class PostLinks(BaseContent):
         self.save()
 
 
-class FacebookPage(BaseContent):
-    post = models.ForeignKey(PostLinks, on_delete=models.CASCADE)
-    fb_id = models.TextField()
+class StackOverflow(BaseContent):
+    link = models.TextField()
+    score = models.IntegerField(default=0)
 
     def __str__(self):
-        return '{} | {}'.format(self.post.original_link, self.fb_id)
+        return '{0}'.format(self.link)
+
+
+class FacebookPage(BaseContent):
+    site = models.IntegerField(choices=SITES, default=0)
+    stack = models.ForeignKey(StackOverflow, on_delete=models.CASCADE, **OPTIONAL)
+    post = models.ForeignKey(PostLinks, on_delete=models.CASCADE, **OPTIONAL)
+    fb_id = models.TextField()
+
+    class Meta:
+        get_latest_by = 'id'
+
+    def __str__(self):
+        return '{} | {} | {}'.format(self.get_site_display(), self.post.original_link, self.fb_id)
+
+    def get_switch(self):
+        data = {0: 1, 1: 0}
+        return data.get(self.site, 0)
